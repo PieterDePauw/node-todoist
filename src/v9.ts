@@ -5,95 +5,17 @@
 import got from 'got'
 import { v4 as uuid } from 'uuid'
 import * as Types from './v9-types'
+import { State, TodoistResources, TodoistResponse, UpdatableProperties, ARRAY_KEYS, TodoistOptions } from './v9-interface'
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
+const { stringify } = JSON;
 
-export interface State {
-  collaborator_states: Types.NodeType[]
-  collaborators: Types.Collaborator[]
-  day_orders_timestamp: string // example: '1591810376.59'
-  day_orders: Types.NodeType[]
-  due_exceptions: Types.NodeType[]
-  filters: Types.Filter[]
-  incomplete_item_ids: Types.NodeType[]
-  incomplete_project_ids: Types.NodeType[]
-  items: Types.Item[]
-  labels: Types.Label[]
-  live_notifications_last_read_id: number
-  live_notifications: Types.LiveNotifications[]
-  locations: Types.NodeType[]
-  notes: Types.Note[]
-  project_notes: Types.ProjectNote[]
-  projects: Types.Project[]
-  reminders: Types.Reminder[]
-  sections: Types.Section[]
-  stats: Types.NodeType[]
-  tooltips: Types.NodeType[]
-  user_settings: Types.UserSettings | null
-  user: Types.User | null
-  temp_id_mapping: Record<string, number>
-}
+const BASE_URL = 'https://api.todoist.com/sync/v9';
 
-interface TodoistResources {
-  collaborator: Types.Collaborator[]
-  filter: Types.Filter[]
-  item: Types.Item[]
-  label: Types.Label[]
-  live_notifications: Types.LiveNotifications[]
-  note: Types.Note[]
-  project: Types.Project[]
-  project_note: Types.ProjectNote[]
-  reminder: Types.Reminder[]
-  section: Types.Section[]
-  user: Types.User
-  user_settings: Types.User
-}
-
-type TodoistResponse = {
-  sync_status: Record<string, string & { error_tag: string; error: string }>
-  temp_id_mapping: Record<string, string>
-  sync_token: string
-  full_sync: boolean
-} & State
-
-const { stringify } = JSON
-
-const BASE = 'https://api.todoist.com/sync/v9'
-
-export type UpdateableProperties =
-  | 'collaborators'
-  | 'collaborator_states'
-  | 'due_exceptions'
-  | 'filters'
-  | 'items'
-  | 'labels'
-  | 'live_notifications'
-  | 'notes'
-  | 'project_notes'
-  | 'projects'
-  | 'reminders'
-  | 'sections'
-
-const ARRAY_KEYS: UpdateableProperties[] = [
-  'collaborators',
-  'collaborator_states',
-  'due_exceptions',
-  'filters',
-  'items',
-  'labels',
-  'live_notifications',
-  'notes',
-  'project_notes',
-  'projects',
-  'reminders',
-  'sections',
-]
-
-const defaultOptions = {
-  endpoint: BASE,
+export const defaultOptions: TodoistOptions = {
+  endpoint: BASE_URL,
   resourceTypes: ['all'],
   autocommit: false,
 }
-export type TodoistOptions = typeof defaultOptions
 
 /**
  * Create a Todoist API instance
