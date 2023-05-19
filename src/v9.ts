@@ -5,6 +5,7 @@
 import got from 'got'
 import { v4 as uuid } from 'uuid'
 import * as Types from './v9-types'
+import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
 
 export interface State {
   collaborator_states: Types.NodeType[]
@@ -57,29 +58,6 @@ type TodoistResponse = {
 const { stringify } = JSON
 
 const BASE = 'https://api.todoist.com/sync/v9'
-
-const COLORS_BY_ID: Record<Types.ColorId, string> = {
-  'berry_red': '#b8256f',
-  'red': '#db4035',
-  'orange': '#ff9933',
-  'yellow': '#fad000',
-  'olive_green': '#afb83b',
-  'lime_green': '#7ecc49',
-  'green': '#299438',
-  'mint_green': '#6accbc',
-  'teal': '#158fad',
-  'sky_blue': '#14aaf5',
-  'light_blue': '#96c3eb',
-  'blue': '#4073ff',
-  'grape': '#884dff',
-  'violet': '#af38eb',
-  'lavender': '#eb96eb',
-  'magenta': '#e05194',
-  'salmon': '#ff8d85',
-  'charcoal': '#808080',
-  'grey': '#b8b8b8',
-  'taupe': '#ccac93',
-}
 
 export type UpdateableProperties =
   | 'collaborators'
@@ -416,7 +394,5 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   return api
 }
 
-Todoist.colorsById = COLORS_BY_ID
-Todoist.getColor = (id: Types.ColorId) => COLORS_BY_ID[id]
-
 export default Todoist
+export { getColor, colorsById }
