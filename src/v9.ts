@@ -9,13 +9,23 @@ import { State, TodoistResources, TodoistResponse, UpdatableProperties, ARRAY_KE
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
 const { stringify } = JSON;
 
+// Define the base URL for the Todoist API
 const BASE_URL = 'https://api.todoist.com/sync/v9';
 
+// Define the default options for the Todoist API
 export const defaultOptions: TodoistOptions = {
   endpoint: BASE_URL,
   resourceTypes: ['all'],
   autocommit: false,
 }
+
+// Create a new array to store the commands
+let commandsArray: {
+  uuid: string;
+  temp_id: string;
+  type: string;
+  args: {},
+}[] = [];
 
 /**
  * Create a Todoist API instance
@@ -62,6 +72,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     user: null,
   }
 
+  // updateState function
   const updateState = (patch: TodoistResponse) => {
     syncToken = patch.sync_token
 
@@ -91,6 +102,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     ARRAY_KEYS.forEach(updateItem)
   }
 
+  // request function
   const request = async (url: { url: string; query?: URLSearchParams }, data: Record<string, string> = {}) => {
     let realUrl = typeof url === 'object' ? url.url : url
     let options = typeof url === 'object' ? { searchParams: url.query, form: data } : { form: data }
@@ -98,65 +110,75 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     return res.body
   }
 
-  /**
-   * @param {string} type - The type of resource
-   * @param {string|Action} action - The name of the action
-   * @param {Object} args - The arguments of the command
-   * @returns {Promise}
-   */
+  // executeCommand function
   const executeCommand = async (type: keyof TodoistResources, action: string, args: {} = {}) => {
+    // Generate a unique id for each command (using the same uuid for 'uuid' and 'temp_id')
     const id = uuid()
-    const tempId = uuid()
 
-    const command = {
-      type: `${type}_${action}`,
-      args,
-      uuid: id,
-      temp_id: tempId,
+    // Build the command object
+    const command: { uuid: string, temp_id: string, type: string, args: {} } = {
+      "uuid": id,
+      "temp_id": id,
+      "type": `${type}_${action}`,
+      "args": args,
     }
 
-    const data = {
-      sync_token: syncToken,
-      resource_types: stringify(options.resourceTypes),
-      commands: stringify([command]),
-    }
+    // Add the command to the commandsArray
+    commandsArray.push(command)
 
-    const res = await request({ url: endpoint }, data)
-    const ok = res.sync_status[id] === 'ok'
-
-    if (!ok) {
-      const status = res.sync_status[id]
-      const error = new Error(`${status.error_tag}: ${status.error}`)
-      return Promise.reject(error)
-    }
-
-    const newId = res.temp_id_mapping[tempId]
-
-    updateState(res)
-    const stateKey = `${type}s` as Exclude<
-      keyof State,
-      'temp_id_mapping' | 'user' | 'user_settings' | 'live_notifications_last_read_id' | 'day_orders_timestamp'
-    >
-    return state[stateKey].find((item) => item.id === newId)
+    // If the autocommit option is set to true, commit this command immediately
+    if (options.autocommit === true) { 
+      commit()
+    };
   }
+
+  // createCommand function
   const createCommand =
     <Args>(type: keyof TodoistResources, action: string) =>
     async (args: Args) =>
       executeCommand(type, action, args)
 
+  // sync function
   const sync = async (resourceTypes = options.resourceTypes) => {
-    const res = await request(
-      { url: endpoint },
-      {
-        sync_token: syncToken,
-        resource_types: stringify(resourceTypes),
-      }
-    )
+    // Build the data object for the HTTP request
+    const data = {
+      "sync_token": syncToken,
+      "resource_types": stringify(options.resourceTypes)
+    }
+
+    // Make an HTTP request to sync the data with the server
+    const res = await request({ "url": endpoint }, data)
+
+    // Update the state
     updateState(res)
+
+    // Return the state
+    return state
   }
 
-  function commit() {
-    // TODO: implement
+  // commit function
+  const commit = async () => {
+    // Clone and clear the commandsArray
+    const committedCommandsArray = structuredClone(commandsArray);
+    commandsArray = [];
+    
+    // Build the data object for the HTTP request
+    const data = {
+      "sync_token": syncToken,
+      "resource_types": stringify(options.resourceTypes),
+      "commands": stringify(committedCommandsArray),
+    }
+
+    // Make an HTTP request to execute all the commands
+    const res = await request({ "url": endpoint }, data)
+    
+    // TODO: Check if the request was successful
+
+    // Update the state
+    updateState(res)
+
+    // Return the state
+    return state
   }
 
   // API
