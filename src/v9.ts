@@ -5,7 +5,7 @@
 import got from 'got'
 import { v4 as uuid } from 'uuid'
 import * as Types from './v9-types'
-import { State, TodoistResources, TodoistResponse, UpdatableProperties, ARRAY_KEYS, TodoistOptions } from './v9-interface'
+import { State, TodoistResources, TodoistResponse, UpdatableProperties, ARRAY_KEYS, TodoistOptions } from './v9-interfaces'
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
 const { stringify } = JSON;
 
@@ -82,7 +82,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       return
     }
 
-    const updateItem = <Key extends UpdateableProperties>(key: Key) => {
+    const updateItem = <Key extends UpdatableProperties>(key: Key) => {
       const items = state[key]
       // in case partial sync
       if (!patch[key]) {
