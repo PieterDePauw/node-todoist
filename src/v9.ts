@@ -204,10 +204,14 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   // commit function
   const commit = async (resourceTypes = options.resourceTypes) => {
-    // Clone the content of the commandsArray and clear it from all values
+    // Set the flag "isCommandsArrayAvailable" to false to disable writing data to the commandsArray
     isCommandsArrayAvailable = false;
+    
+    // Clone the content of the commandsArray and clear it from all values
     const commands = deepCopy(commandsArray);
     commandsArray = [];
+
+    // Set the flag "isCommandsArrayAvailable" to true to re-enable writing data to the commandsArray
     isCommandsArrayAvailable = true;
     
     // Build the data object for the HTTP request
@@ -221,6 +225,27 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     const res = await request({ 'url': endpoint }, data)
     
     // TODO: Check if the request was successful
+    // If the response contains the sync_status object
+    if (res.sync_status) {
+      // Create an array containing all temporary id's
+      const temporaryIds = Object.keys(res.sync_status)
+
+      // Check the success status for each temporary id
+      temporaryIds.forEach((temporaryId) => {
+        const status = res.sync_status[temporaryId]
+        if (status === 'ok') {
+          // TODO: Replace the temporary id in the local storage with the real id (?)
+          // const realId = res.temp_id_mapping[temporaryId]
+          // const item = res.items.find((item) => item.id === id)
+          console.info("commit succesful")
+          return
+        }
+        if (status !== 'ok') {
+          console.info("commit failed"), console.error(`${status.error_tag} — ${status.error}`)
+          return
+        }
+      })
+    }
 
     // Update the state
     updateState(res)
