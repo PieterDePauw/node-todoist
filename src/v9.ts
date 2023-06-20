@@ -39,16 +39,23 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       `Invalid API token. A token should be 40 characters long and exist of hexadecimals, was ${token} (${token.length} characters)`
     )
 
+  // options for 'got' library
   const options = Object.assign({}, defaultOptions, userOptions)
+
+  // HTTPS client
   const client = got.extend({
     method: 'POST',
     responseType: 'json',
     headers: { Authorization: `Bearer ${token}` },
   })
 
+  // default endpoint
   const endpoint = `${options.endpoint}/sync`
 
+  // syncToken
   let syncToken = '*'
+  
+  // state object
   let state: State = {
     collaborator_states: [],
     collaborators: [],
@@ -65,6 +72,33 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     locations: [],
     notes: [],
     project_notes: [], // XXX handle this
+    projects: [],
+    reminders: [],
+    sections: [],
+    stats: [],
+    temp_id_mapping: {},
+    tooltips: [],
+    user_settings: null,
+    user: null,
+  }
+
+  // localState object
+  let localState: State = {
+    collaborator_states: [],
+    collaborators: [],
+    day_orders_timestamp: '',
+    day_orders: [],
+    due_exceptions: [],
+    filters: [],
+    incomplete_item_ids: [],
+    incomplete_project_ids: [],
+    items: [],
+    labels: [],
+    live_notifications_last_read_id: 0,
+    live_notifications: [],
+    locations: [],
+    notes: [],
+    project_notes: [],
     projects: [],
     reminders: [],
     sections: [],
