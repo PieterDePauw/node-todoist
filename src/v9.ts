@@ -250,6 +250,9 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Update the state
     updateState(res)
 
+    // Replace local state with latest updates from state
+    localState = copyDeep(state);
+
     // Return the state
     return state
   }
