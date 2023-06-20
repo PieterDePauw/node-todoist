@@ -8,6 +8,7 @@ import * as Types from './v9-types'
 import { State, TodoistResources, TodoistResponse, UpdatableProperties, ARRAY_KEYS, TodoistOptions } from './v9-interfaces'
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
 const { stringify } = JSON;
+const deepCopy = (data) => JSON.parse(JSON.stringify(data));
 
 // Define the base URL for the Todoist API
 const BASE_URL = 'https://api.todoist.com/sync/v9';
@@ -26,6 +27,8 @@ let commandsArray: {
   type: string;
   args: {},
 }[] = [];
+
+let isCommandsArrayAvailable: boolean = true;
 
 /**
  * Create a Todoist API instance
@@ -117,14 +120,23 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
     // Build the command object
     const command: { uuid: string, temp_id: string, type: string, args: {} } = {
-      "uuid": id,
-      "temp_id": id,
-      "type": `${type}_${action}`,
-      "args": args,
+      'uuid': id,
+      'temp_id': id,
+      'type': `${type}_${action}`,
+      'args': args,
     }
 
-    // Add the command to the commandsArray
-    commandsArray.push(command)
+    // checkAvailability is an IIFE that checks the availability of the commandsArray
+    (function checkAvailability() {
+      // If the commandsArray is not yet available, wait 100 ms and try again..
+      if (isCommandsArrayAvailable === false) {
+        setTimeout(checkAvailability, 100);
+      } else
+      // If the commandsArray is available, add the command to the commandsArray
+      if (isCommandsArrayAvailable === true) {
+        commandsArray.push(command);
+      }
+    })();
 
     // If the autocommit option is set to true, commit this command immediately
     if (options.autocommit === true) { 
@@ -142,12 +154,12 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   const sync = async (resourceTypes = options.resourceTypes) => {
     // Build the data object for the HTTP request
     const data = {
-      "sync_token": syncToken,
-      "resource_types": stringify(options.resourceTypes)
+      'sync_token': syncToken,
+      'resource_types': stringify(resourceTypes)
     }
 
     // Make an HTTP request to sync the data with the server
-    const res = await request({ "url": endpoint }, data)
+    const res = await request({ 'url': endpoint }, data)
 
     // Update the state
     updateState(res)
@@ -157,20 +169,22 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   }
 
   // commit function
-  const commit = async () => {
-    // Clone and clear the commandsArray
-    const committedCommandsArray = structuredClone(commandsArray);
+  const commit = async (resourceTypes = options.resourceTypes) => {
+    // Clone the content of the commandsArray and clear it from all values
+    isCommandsArrayAvailable = false;
+    const commands = deepCopy(commandsArray);
     commandsArray = [];
+    isCommandsArrayAvailable = true;
     
     // Build the data object for the HTTP request
     const data = {
-      "sync_token": syncToken,
-      "resource_types": stringify(options.resourceTypes),
-      "commands": stringify(committedCommandsArray),
+      'sync_token': syncToken,
+      'resource_types': stringify(resourceTypes),
+      'commands': stringify(commands),
     }
 
     // Make an HTTP request to execute all the commands
-    const res = await request({ "url": endpoint }, data)
+    const res = await request({ 'url': endpoint }, data)
     
     // TODO: Check if the request was successful
 
