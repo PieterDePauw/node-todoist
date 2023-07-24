@@ -77,6 +77,55 @@ export const ARRAY_KEYS: UpdatableProperties[] = [
 	'sections',
 ]
 
+export const dataTypes = [
+	'collaborator_states',
+	'collaborators',
+	'day_orders_timestamp',
+	'day_orders',
+	'due_exceptions',
+	'filters',
+	'items',
+	'labels',
+	'live_notifications_last_read_id',
+	'live_notifications',
+	'locations',
+	'notes',
+	'project_notes',
+	'projects',
+	'reminders',
+	'sections',
+	'settings_notifications',
+	'user_settings',
+	'user',
+]
+
+export const dataTypesToAppend = [
+	'day_orders',
+	'settings_notifications',
+	'user',
+	'user_settings'
+];
+
+export const dataTypesToReplace = [
+	'day_orders_timestamp',
+	'live_notifications_last_read_id',
+	'locations'
+];
+
+export const dataTypesToUpdate = [
+	'collaborators',
+	'collaborator_states',
+	'filters',
+	'items',
+	'labels',
+	'live_notifications',
+	'notes',
+	'project_notes',
+	'projects',
+	'reminders',
+	'sections'
+];
+
 export type TodoistOptions = {
 	'endpoint': string,
 	'resourceTypes': Array<string>,

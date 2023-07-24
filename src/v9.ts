@@ -4,10 +4,16 @@
 
 import got from 'got'
 import { v4 as uuid } from 'uuid'
+import { Mutex } from 'async-mutex'
 import * as Types from './v9-types'
-import { State, TodoistResources, TodoistResponse, UpdatableProperties, ARRAY_KEYS, TodoistOptions } from './v9-interfaces'
+import { State, TodoistResources, TodoistResponse, UpdatableProperties, dataTypes, dataTypesToAppend, dataTypesToReplace, dataTypesToUpdate, TodoistOptions } from './v9-interfaces'
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
 const { stringify } = JSON;
+
+// Add a mutex
+const mutex = new Mutex();
+
+// Add shortcut function to deep copy data
 const deepCopy = (data) => JSON.parse(JSON.stringify(data));
 
 // Define the base URL for the Todoist API
@@ -28,34 +34,33 @@ let commandsArray: {
   args: {},
 }[] = [];
 
-let isCommandsArrayAvailable: boolean = true;
-
 /**
  * Create a Todoist API instance
  */
 export const Todoist = (token: string, userOptions = defaultOptions) => {
-  if (!/^[0-9A-Fa-f]{40}$/.test(token))
-    throw new Error(
-      `Invalid API token. A token should be 40 characters long and exist of hexadecimals, was ${token} (${token.length} characters)`
-    )
+  // Check if the token is valid
+  if (!/^[0-9A-Fa-f]{40}$/.test(token)) {
+    const errorMessage = `Invalid API token. A token should be 40 characters long and exist of hexadecimals. The token that you have used had ${token.length} characters)`
+    throw new Error(errorMessage);
+  }
 
   // options for 'got' library
   const options = Object.assign({}, defaultOptions, userOptions)
 
-  // HTTPS client
+  // HTTPS client for Todoist API
   const client = got.extend({
     method: 'POST',
     responseType: 'json',
     headers: { Authorization: `Bearer ${token}` },
   })
 
-  // default endpoint
+  //* ENDPOINT VARIABLE (default value is 'https://api.todoist.com/sync/v9')
   const endpoint = `${options.endpoint}/sync`
 
-  // syncToken
+  //* SYNC TOKEN VARIABLE (default value is '*')
   let syncToken = '*'
-  
-  // state object
+
+  //* STATE OBJECT
   let state: State = {
     collaborator_states: [],
     collaborators: [],
@@ -82,72 +87,91 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     user: null,
   }
 
-  // localState object
-  let localState: State = {
-    collaborator_states: [],
-    collaborators: [],
-    day_orders_timestamp: '',
-    day_orders: [],
-    due_exceptions: [],
-    filters: [],
-    incomplete_item_ids: [],
-    incomplete_project_ids: [],
-    items: [],
-    labels: [],
-    live_notifications_last_read_id: 0,
-    live_notifications: [],
-    locations: [],
-    notes: [],
-    project_notes: [],
-    projects: [],
-    reminders: [],
-    sections: [],
-    stats: [],
-    temp_id_mapping: {},
-    tooltips: [],
-    user_settings: null,
-    user: null,
-  }
+  //* LOCAL STATE OBJECT
+  let localState: State = deepCopy(state);
 
-  // updateState function
+  //+ UPDATE STATE FUNCTION
   const updateState = (patch: TodoistResponse) => {
+    // STEP 1. Always update the sync token
     syncToken = patch.sync_token
 
+    // STEP 2. Update the state
     /* Case 1: full_sync: replace whole state */
-    if (patch.full_sync) {
-      Object.assign(state, patch)
+    if (patch.full_sync === true) {
+      // Object.assign(state, patch) is not working because it is not deep copying the data
+      state = deepCopy(patch);
       return
     }
 
-    const updateItem = <Key extends UpdatableProperties>(key: Key) => {
-      const items = state[key]
-      // in case partial sync
-      if (!patch[key]) {
-        return
-      }
-      const newItems: Types.NodeType[] = patch[key]
-      const newItemIds = newItems.map((item) => item.id)
-      const updatedItems = items
-        // remove items that are not found in the result set
-        .filter((item) => !newItemIds.includes(item.id))
-        // add items from the result set
-        .concat(newItems.filter((item) => !item.is_deleted))
-      state[key] = updatedItems as State[Key]
-    }
-
     /* Case 2: need to replace part of the state that changed */
-    ARRAY_KEYS.forEach(updateItem)
+    if (patch.full_sync === false) {
+
+      const updateItem = <Key extends UpdatableProperties>(key: Key) => {
+        // If the key is not present in the patch or if it is not updatable, skip this key
+        if (!patch[key] || !dataTypes.includes(key)) {
+          return
+        }
+
+        // If the key is present in the patch, append, replace or update the state:
+        if (patch[key]) {
+          // > A. If the key is part of the dataTypesToAppend array, append the data to the state
+          if (dataTypesToAppend.includes(key)) {
+            state[key] = Object.assign(state[key], patch[key]) as State[Key];
+            return
+          }
+
+          // > B. If the key is part of the dataTypesToReplace array, replace the data in the state
+          if (dataTypesToReplace.includes(key)) {
+            state[key] = patch[key] as State[Key]
+            return
+          }
+
+          // > C. If the key is part of the dataTypesToUpdate array, update the data in the state
+          if (dataTypesToUpdate.includes(key)) {
+            // 1. Get the current and updated resource items
+            const currentResourceItems = state[key]
+            const updatedResourceItems = patch[key]
+
+            // 2. Create a set of all updated item id's
+            const updatedResourceItemIds = new Set(updatedResourceItems.map((item) => item.id));
+
+            // 3. Do some operations on the current and updated resource items
+            const currentResourcesItemsThatAreNotUpdated = currentResourceItems.filter((item) => !updatedResourceItemIds.has(item.id))
+            const updatedResourcesItemsThatAreNotDeleted = updatedResourceItems.filter((item) => !item.is_deleted)
+            const newResourceItems = currentResourcesItemsThatAreNotUpdated.concat(updatedResourcesItemsThatAreNotDeleted)
+
+            /*
+            const newResourceItems = currentResourceItems
+            .filter((item) => !updatedResourceItemIds.has(item.id))
+            .concat(updatedResourceItems.filter((item) => !item.is_deleted))
+            */
+
+            state[key] = newResourceItems as State[Key]
+            return
+          }
+        }
+      }
+
+      // Loop over all data types and update the state for each data type
+      dataTypes.forEach(updateItem)
+
+      // const dataTypesInPatch = Object.keys(patch)
+      // dataTypesInPatch.forEach(updateItem)
+
+    }
   }
 
-  // request function
+
+
+  //+ REQUEST FUNCTION
   const request = async (url: { url: string; query?: URLSearchParams }, data: Record<string, string> = {}) => {
     let realUrl = typeof url === 'object' ? url.url : url
     let options = typeof url === 'object' ? { searchParams: url.query, form: data } : { form: data }
-    const res = await client<TodoistResponse>(realUrl, options)
-    return res.body
+    const response = await client<TodoistResponse>(realUrl, options)
+    return response.body
   }
 
-  // executeCommand function
+  //+ EXECUTE COMMAND FUNCTION
   const executeCommand = async (type: keyof TodoistResources, action: string, args: {} = {}) => {
     // Generate a unique id for each command (using the same uuid for 'uuid' and 'temp_id')
     const id = uuid()
@@ -160,31 +184,28 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       'args': args,
     }
 
-    // checkAvailability is an IIFE that checks the availability of the commandsArray
-    (function checkAvailability() {
-      // If the commandsArray is not yet available, wait 100 ms and try again..
-      if (isCommandsArrayAvailable === false) {
-        setTimeout(checkAvailability, 100);
-      } else
-      // If the commandsArray is available, add the command to the commandsArray
-      if (isCommandsArrayAvailable === true) {
-        commandsArray.push(command);
-      }
-    })();
+    // Push the command to the commandsArray
+    commandsArray.push(command);
+
+    // If the autocommit option is set to false, use the command to update the local state
+    if (options.autocommit === false) {
+      // TODO: Here, we can update the local state instead of the state
+    };
 
     // If the autocommit option is set to true, commit this command immediately
-    if (options.autocommit === true) { 
+    if (options.autocommit === true) {
       commit()
     };
   }
 
-  // createCommand function
+  //+ CREATE COMMAND FUNCTION
   const createCommand =
     <Args>(type: keyof TodoistResources, action: string) =>
-    async (args: Args) =>
-      executeCommand(type, action, args)
+      async (args: Args) =>
+        executeCommand(type, action, args)
 
-  // sync function
+
+  //+ SYNC FUNCTION
   const sync = async (resourceTypes = options.resourceTypes) => {
     // Build the data object for the HTTP request
     const data = {
@@ -193,27 +214,21 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     }
 
     // Make an HTTP request to sync the data with the server
-    const res = await request({ 'url': endpoint }, data)
+    const response = await request({ 'url': endpoint }, data)
 
     // Update the state
-    updateState(res)
+    updateState(response)
 
     // Return the state
     return state
   }
 
-  // commit function
+  //+ COMMIT FUNCTION
   const commit = async (resourceTypes = options.resourceTypes) => {
-    // Set the flag "isCommandsArrayAvailable" to false to disable writing data to the commandsArray
-    isCommandsArrayAvailable = false;
-    
-    // Clone the content of the commandsArray and clear it from all values
-    const commands = deepCopy(commandsArray);
+    // Get the commands from the commandsArray
+    const commands = await deepCopy(commandsArray);
     commandsArray = [];
 
-    // Set the flag "isCommandsArrayAvailable" to true to re-enable writing data to the commandsArray
-    isCommandsArrayAvailable = true;
-    
     // Build the data object for the HTTP request
     const data = {
       'sync_token': syncToken,
@@ -222,33 +237,55 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     }
 
     // Make an HTTP request to execute all the commands
-    const res = await request({ 'url': endpoint }, data)
-    
+    const response = await request({ 'url': endpoint }, data)
+
     // TODO: Check if the request was successful
     // If the response contains the sync_status object
-    if (res.sync_status) {
+    if (response.sync_status) {
       // Create an array containing all temporary id's
-      const temporaryIds = Object.keys(res.sync_status)
+      const temporaryIds = Object.keys(response.sync_status)
 
       // Check the success status for each temporary id
       temporaryIds.forEach((temporaryId) => {
-        const status = res.sync_status[temporaryId]
+        // Get the sync status for this temporary id
+        const status = response.sync_status[temporaryId]
+
+        // If the status is 'ok', replace the temporary id with the real id
         if (status === 'ok') {
-          // TODO: Replace the temporary id in the local storage with the real id (?)
-          // const realId = res.temp_id_mapping[temporaryId]
-          // const item = res.items.find((item) => item.id === id)
-          console.info("commit succesful")
+          // Get the real id by looking up the temporary id in the response
+          const realId = response.temp_id_mapping[temporaryId]
+          console.info(`commit succesful:`)
           return
         }
+
+        // If the status is not 'ok', log the error
         if (status !== 'ok') {
-          console.info("commit failed"), console.error(`${status.error_tag} — ${status.error}`)
+          const errorMessage = `${status.error_tag} — ${status.error}`
+          console.error(`commit failed:`, errorMessage)
           return
         }
       })
     }
+    // If the response does not contain the sync_status object, log an error
+    else {
+      // Define the error conditions
+      const syncStatusError = (response.sync_status === undefined || response.sync_status === null)
+      const tempIdError = (response.temp_id_mapping === undefined || response.temp_id_mapping === null)
+
+      // Log the error
+      if (syncStatusError && tempIdError) {
+        console.error("commit failed: both sync_status and temp_id_mapping are undefined or null")
+      }
+      if (syncStatusError) {
+        console.error("commit failed: sync_status is undefined or null")
+      }
+      if (tempIdError) {
+        console.error("commit failed: temp_id_mapping is undefined or null")
+      }
+    }
 
     // Update the state
-    updateState(res)
+    updateState(response)
 
     // Replace local state with latest updates from state
     localState = copyDeep(state);
