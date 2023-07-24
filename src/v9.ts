@@ -4,14 +4,10 @@
 
 import got from 'got'
 import { v4 as uuid } from 'uuid'
-import { Mutex } from 'async-mutex'
 import * as Types from './v9-types'
 import { State, TodoistResources, TodoistResponse, UpdatableProperties, dataTypes, dataTypesToAppend, dataTypesToReplace, dataTypesToUpdate, TodoistOptions } from './v9-interfaces'
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors'
 const { stringify } = JSON;
-
-// Add a mutex
-const mutex = new Mutex();
 
 // Add shortcut function to deep copy data
 const deepCopy = (data) => JSON.parse(JSON.stringify(data));
@@ -33,6 +29,38 @@ let commandsArray: {
   type: string;
   args: {},
 }[] = [];
+
+// Create a flag to indicate if the commands array is available or being used
+let isCommandsArrayBeingUsed = false;
+
+// Create a function to deep copy the commands array and clear the commands array  
+function lockResources(action) {
+  // While isCommandsArrayBeingUsed is true, keep looping but do nothing
+  while (isCommandsArrayBeingUsed);
+
+  // Set isCommandsArrayBeingUsed to true
+  isCommandsArrayBeingUsed = true;
+
+  // Execute the action function and store the returned value
+  const returnValue = action();
+
+  // Set isCommandsArrayBeingUsed to false
+  isCommandsArrayBeingUsed = false;
+
+  // Return the returned value
+  return returnValue
+}
+
+// Create a function to deep copy the commands array and clear the commands array
+function deepCopyAndClearCommandsArray() {
+  // Create a deep copy of the commands array
+  const deepCopiedCommandsArray = JSON.parse(JSON.stringify(commandsArray));
+  // Clear the commands array
+  commandsArray = [];
+  // Return the deep copied commands array
+  return deepCopiedCommandsArray
+}
+
 
 /**
  * Create a Todoist API instance
@@ -161,7 +189,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     }
   }
 
-
+  // TODO: Update the local state
 
   //+ REQUEST FUNCTION
   const request = async (url: { url: string; query?: URLSearchParams }, data: Record<string, string> = {}) => {
@@ -185,7 +213,9 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     }
 
     // Push the command to the commandsArray
-    commandsArray.push(command);
+    const pushCommand = () => commandsArray.push(command);
+    await lockResources(pushCommand);
+    // commandsArray.push(command);
 
     // If the autocommit option is set to false, use the command to update the local state
     if (options.autocommit === false) {
@@ -225,9 +255,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   //+ COMMIT FUNCTION
   const commit = async (resourceTypes = options.resourceTypes) => {
-    // Get the commands from the commandsArray
-    const commands = await deepCopy(commandsArray);
-    commandsArray = [];
+    // Make a deep copy of the commands array and reset the commands array
+    const commands = lockResources(deepCopyAndClearCommandsArray);
 
     // Build the data object for the HTTP request
     const data = {
