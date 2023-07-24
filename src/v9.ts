@@ -34,7 +34,7 @@ let commandsArray: {
 let isCommandsArrayBeingUsed = false;
 
 // Create a function to deep copy the commands array and clear the commands array  
-function lockResources(action) {
+function lock(action) {
   // While isCommandsArrayBeingUsed is true, keep looping but do nothing
   while (isCommandsArrayBeingUsed);
 
@@ -213,8 +213,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     }
 
     // Push the command to the commandsArray
-    const pushCommand = () => commandsArray.push(command);
-    await lockResources(pushCommand);
+    lock(() => commandsArray.push(command));
     // commandsArray.push(command);
 
     // If the autocommit option is set to false, use the command to update the local state
@@ -256,7 +255,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   //+ COMMIT FUNCTION
   const commit = async (resourceTypes = options.resourceTypes) => {
     // Make a deep copy of the commands array and reset the commands array
-    const commands = lockResources(deepCopyAndClearCommandsArray);
+    const commands = lock(deepCopyAndClearCommandsArray);
 
     // Build the data object for the HTTP request
     const data = {
