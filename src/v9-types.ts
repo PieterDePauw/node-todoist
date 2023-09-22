@@ -3,7 +3,7 @@ export interface NodeType {
   is_deleted?: boolean
 }
 
-export type Id = number | string
+export type Id = string
 
 export type FileUpload = never
 
@@ -79,6 +79,8 @@ export type LanguageId =
   | 'tr'
   | 'zh_CN'
   | 'zh_TW'
+
+export type DayOrders = Record<string, number>
 
 export interface Item extends NodeType {
   /** The id of the task. */
@@ -292,7 +294,7 @@ export interface Project extends NodeType {
 
 export interface ProjectAdd {
   /** The name of the project (a string value). */
-  name: String
+  name: string
   /** Color id. It’s a value between 30 and 49, refer to Colors for more info. */
   color?: ColorId
   /** The id of the parent project. Set to null for root projects */
@@ -409,7 +411,7 @@ export interface LabelRename {
   name_new: string
 }
 
-export interface LabelUpdateOrders {}
+export interface LabelUpdateOrders { }
 
 export interface ProjectNote extends NodeType {
   /** The id of the note. */
@@ -726,7 +728,7 @@ export interface ReminderDelete {
   id: Id
 }
 
-export interface ReminderClearLocations {}
+export interface ReminderClearLocations { }
 
 export interface User extends NodeType {
   /** The default time in minutes for the automatic reminders set, whenever a due date has been specified for a task. */
@@ -860,7 +862,7 @@ export interface UserUpdateGoals {
   karma_disabled?: boolean
 }
 
-export interface UserSettings extends NodeType {
+export interface UserSettings {
   /** Set to true to send reminders as push notifications */
   reminder_push: boolean
   /** Set to true to send reminders via SMS */
@@ -900,6 +902,13 @@ export type CollaboratorDeleteCollaborator = any
 export type CollaboratorAcceptInvitation = any
 export type CollaboratorRejectInvitation = any
 export type CollaboratorDeleteInvitation = any
+
+export interface CollaboratorState {
+  project_id: string
+  user_id: string
+  state: 'active' | 'deleted'
+  is_deleted: boolean
+}
 
 /** share_invitation_sent	Sent to the sharing invitation receiver. */
 /** share_invitation_accepted	Sent to the sharing invitation sender, when the receiver accepts the invitation. */

@@ -28,7 +28,12 @@
     "watch": "tsc --watch",
     "test": "jest --bail",
     "test:watch": "jest --bail --watch",
-    "test:coverage": "jest --coverage --watchAll=false"
+    "test:coverage": "jest --coverage --watchAll=false",
+    "test example": "node examples/simple.js",
+    "test example2": "node examples/simple2.mjs",
+    "test example3": "node examples/simple3.js",
+    "test example4": "node examples/simple4.js",
+    "test example5": "node examples/simple5.js"
   },
   "browserslist": {
     "production": [
@@ -44,6 +49,7 @@
   },
   "dependencies": {
     "got": "^11.3.0",
+    "immer": "^10.0.2",
     "uuid": "^8.1.0"
   },
   "devDependencies": {
