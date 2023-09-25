@@ -322,6 +322,9 @@ export type StateFunctions = {
 	getState: () => State;
 	setState: (newState: State) => State;
 	resetState: () => State;
+	getLocalState: () => State;
+	setLocalState: (newLocalState: State) => State;
+	resetLocalState: () => State;
 }
 
 export type SyncTokenFunctions = {

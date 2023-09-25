@@ -29,5 +29,5 @@ export const colorsById = COLORS_BY_ID
 
 // The function getColor takes color ids as argument and returns corresponding hexadecimal color codes for that color (e.g. 'red' => '#db4035')
 export const getColor = (id: Types.ColorId) => {
-	COLORS_BY_ID[id]
+  return COLORS_BY_ID[id]
 }
