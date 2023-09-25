@@ -15,7 +15,7 @@ import { actionFunctions } from './v9-actions';
 
 // Define the default options for the Todoist API
 export const defaultOptions: TodoistOptions = {
-  'endpoint': TODOIST_BASE_URL || 'https://api.todoist.com/sync/v9',
+  'endpoint': TODOIST_BASE_URL || getApiUrl("v9"),
   'resourceTypes': JSON.parse(TODOIST_RESOURCE_TYPES) || ['all'],
   'autocommit': JSON.parse(TODOIST_AUTOCOMMIT) || false
 }
@@ -68,10 +68,9 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   // Create a new client instance
   const client = got.extend({ method: 'POST', responseType: 'json', headers: { Authorization: `Bearer ${token}` } })
 
-  // Assign the endpoint option, the isFirstSync flag and the default sync token to variables
+  // Assign the endpoint option and the default sync token to variables
   const endpoint = `${options.endpoint}/sync`
   let syncToken = '*';
-  let isFirstSync = true;
 
 
   const request = async (url: { url: string; query?: URLSearchParams }, data: Record<string, string> = {}) => {
@@ -186,55 +185,44 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   */
 
   // Create a state manager for the state and the local state
-  const createStateManager = (initState: State, prefix: string = ""): StateFunctions => {
+  const createStateManager = (initState: State): StateFunctions => {
     let state = deepcopy(initState);
+    let localState = deepcopy(initState);
     return {
       getState: (): State => {
-        const retrievedState = deepcopy(state);
-        console.log("The state has been retrieved")
-        return retrievedState
+        // console.log("The state has been retrieved")
+        return deepcopy(state);
       },
       setState: (newState: State): State => {
         state = deepcopy(newState);
-        console.log("The state has been updated")
-        return state
+        // console.log("The state has been updated")
+        return deepcopy(state)
       },
       resetState: () => {
         syncToken = "*";   //resetSyncToken();
         state = deepcopy(initState);
-        console.log("The state and the sync token have been reset");
-        return state
+        // console.log("The state and the sync token have been reset");
+        return deepcopy(state)
+      },
+      getLocalState: (): State => {
+        // console.log("The local state has been retrieved")
+        return deepcopy(localState);
+      },
+      setLocalState: (newLocalState: State): State => {
+        localState = deepcopy(newLocalState);
+        // console.log("The local state has been updated")
+        return deepcopy(localState);
+      },
+      resetLocalState: () => {
+        localState = deepcopy(initState);
+        // console.log("The local state has been reset");
+        return deepcopy(localState);
       }
 
     }
   }
   const { getState, setState, resetState } = createStateManager(initialState);
-  const { getState: getLocalState, setState: setLocalState, resetState: resetLocalState } = createStateManager(initialState, 'local');
-  /**===================================**
-      *  	READ / WRITE STATE CACHE	 *
-  /*====================================**/
-
-  /* READ / WRITE STATE CACHE
-  // Read the state from the cache
-  const readStateFromCache = () => {
-    const { "state": state, "sync_token": sync_token } = readCache();
-    // Assign the cached state object and the sync token to variables
-    const cachedState = deepcopy(state);
-    const cachedSyncToken = deepcopy(sync_token);
-    // Set the state and the sync token
-    setState(cachedState);
-    syncToken = cachedSyncToken;
-  }
-
-  // Write the state to the cache
-  const writeStateToCache = () => {
-    // Get the current state and sync token
-    const currentState = getState();
-    const currentSyncToken = syncToken;
-    // Write the state and the sync token to the cache
-    writeCache(currentState, currentSyncToken);
-  }
-  */
+  const { getLocalState, setLocalState, resetLocalState } = createStateManager(initialState);
 
   /**===================================**
       *  	UPDATE STATE FUNCTIONS	 *
@@ -372,7 +360,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Get the current local state for the resource type
     const localStateForResourceType = localState[resourceTypes];
 
-    // Check if the action function exists
+    // Check if the action function exists for the specified resource type and action
     if (!actionFunctions[resourceTypes]) { throw new Error(`No action function found for resourceType: ${resourceType}`) }
     if (!actionFunctions[resourceTypes][action]) { throw new Error(`No action function found for action: ${action}`) }
 
@@ -385,8 +373,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Update the local state
     setLocalState(newLocalState);
 
-    // TODO: Remove this temporary workaround (which only works for getting the local state of resource items)
-    return ((getLocalState())[resourceTypes]);
+    // Update the local state
+    return newLocalState
   }
 
   // The executeCommand method adds a new command to the queue and updates the local state accordingly
@@ -426,9 +414,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   // The sync method syncs the current state with the server and updates the state accordingly
   const sync = async (token?: string) => {
-    // If this is the first sync, set the sync token to '*'
-    if (isFirstSync === true) { syncToken = '*' }
-
     // Build the data object for the HTTP request
     const data = {
       'sync_token': token || syncToken,
@@ -441,11 +426,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Update the state
     const updatedState = updateState(response)
 
-    // Set the first sync flag to false
-    isFirstSync = false
-
     // Log the updated state to the console
-    console.log("SYNC: " + updatedState, null, 2)
+    // console.dir(updatedState, { depth: 8, colors: true });
 
     // Return the state
     return updatedState;
@@ -453,9 +435,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   // The commit method executes all the commands in the commands array and updates the state accordingly
   const commit = async (token?: string) => {
-    // Sync the data with the server
-    // await sync();
-
     // Get the commands array
     const commands: Command[] = getCommands();
 
@@ -476,7 +455,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     const updatedState = updateState(response)
 
     // Log the updated state to the console
-    console.log("COMMIT: " + updatedState, null, 2)
+    // console.dir(updatedState, { depth: 8, colors: true });
 
     // Return the state
     return updatedState;
