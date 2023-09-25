@@ -2,11 +2,12 @@ import path from 'path';
 import os from 'os';
 import fs from 'fs';
 import { State } from "./v9-interfaces"
+import { TODOIST_CACHE_DIRECTORY_NAME, TODOIST_STATE_FILE_NAME, TODOIST_SYNC_FILE_NAME } from './utils/env';
 
 // Define the file path and file names for the cache files
-const cacheFilePath: string = path.join(os.homedir(), '.todoist-sync');
-const stateCacheFileName: string = 'state';
-const syncTokenCacheFileName: string = 'syncToken';
+const cacheFilePath: string = path.join(os.homedir(), TODOIST_CACHE_DIRECTORY_NAME);
+const stateCacheFileName: string = TODOIST_STATE_FILE_NAME;
+const syncTokenCacheFileName: string = TODOIST_SYNC_FILE_NAME;
 
 export const writeCache = (state: State, sync_token: string) => {
 	try {
