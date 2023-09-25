@@ -1,87 +1,110 @@
-import { v9 as Todoist } from './index'
-import { config } from 'dotenv'
-import { NodeType } from './v9-types'
-import path from 'path'
+import * as chrono from 'chrono-node';
+import { v9 as Todoist } from './index';
+import { config } from 'dotenv';
+import { Item, ItemAdd, DueDateInputString } from './v9-types'; // Import the types you defined
+import { State } from './v9-interfaces'
+import path from 'path';
+import moment from 'moment';
+
+// Load environment variables from .env file
 config({ path: path.basename(__dirname + '/.env') })
 
-type ApiType = ReturnType<typeof Todoist>
-let api: ApiType
+type ApiType = ReturnType<typeof Todoist>;
+let api: ApiType;
+let token = process.env.TODOIST_API_KEY as string
 
+// 
 describe('initialization', () => {
   it('fails with invalid api key', () => {
     expect(() => {
-      api = Todoist('invalid')
-    }).toThrow()
-  })
+      api = Todoist('invalid');
+    }).toThrow();
+  });
 
   it('works', () => {
-    api = Todoist(process.env.TODOIST_API_KEY as string)
-  })
+    api = Todoist(process.env.TODOIST_API_KEY as string);
+  });
 
-  test('.sync() properly', async () => {
-    await api.sync()
-  })
-})
+  it('.sync() properly', async () => {
+    api = Todoist(token);
+    await api.sync();
+  });
+});
 
+// TESTS WITH REGARDS TO PROJECTS
 describe('.items CRUD', () => {
-  let newItem: NodeType | undefined
+  api = Todoist(token);
+  let newItem: Item | undefined;
 
-  test('.get() returns data', () => {
-    const items = api.items.get()
-    expect(items).toBeInstanceOf(Array)
-  })
+  it('.get() returns data', () => {
+    const items = api.items.get();
+    expect(items).toBeInstanceOf(Array);
+  });
 
-  test('.add() works', async () => {
-    newItem = await api.items.add({ content: 'testing-task' })
-    expect(newItem).toMatchObject({ content: 'testing-task' })
-  })
+  it('.add() works', async () => {
+    const itemToAdd: ItemAdd = { content: 'testing-task' };  // Use the ItemAdd type you defined
+    await api.items.add(itemToAdd);
+    await api.commit();
+    await api.sync();
+    newItem = api.items.get().find((item) => item.content === 'testing-task');
+    expect(newItem).toMatchObject({ content: 'testing-task' });
+  });
 
-  test('.delete() works', async () => {
-    if (!newItem) return
-    await api.items.delete({ id: newItem.id })
-    const deletedItem = api.items.get().find((item) => item.id === newItem?.id)
-    expect(deletedItem).toBeUndefined()
-  })
-})
+  it('.delete() works', async () => {
+    if (!newItem) { throw new Error('newItem is not initialized') }
+    await api.items.delete({ id: newItem.id });
+    await api.commit();
+    await api.sync();
+    const deletedItem = api.items.get().find((item) => item.id === newItem?.id);
+    expect(deletedItem).toBeUndefined();
+  });
+});
 
 describe('.items due dates', () => {
-  let item: NodeType | undefined
+  let item: Item | undefined;
+  const itemContent = "EXPECTED ITEM"; // The content of the item you want to add
+  const now = Date.now();              // The current date and time
+
+  // Expected values
+  const expectedDateTimeString = '14 May 2024 07:06';
+  const expectedDueDateISOStringWithoutMiliseconds = '2024-05-14T07:06:00';
 
   afterEach(async () => {
     if (item) {
-      await api.items.delete({ id: item.id })
+      await api.items.delete({ id: item.id });
     }
-  })
+  });
 
-  test('.add() with string due date', async () => {
-    item = await api.items.add({ content: 'testing-task', due: { string: '17th of july 2021' } })
-    expect(item).toMatchObject({
-      content: 'testing-task',
-      due: {
-        date: '2021-07-17',
-        is_recurring: false,
-        lang: 'en',
-        string: '17th of july 2021',
-        timezone: null,
-      },
-    })
-  })
+  it('.add() with string due date', async () => {
 
-  test('.add() with due date', async () => {
-    item = await api.items.add({
-      content: 'testing-task',
-      due: { date: '2018-10-14' },
-    })
-    console.log(item)
-    expect(item).toMatchObject({
-      content: 'testing-task',
-      due: {
-        date: '2018-10-14',
-        is_recurring: false,
-        lang: 'en',
-        string: '2018-10-14',
-        timezone: null,
-      },
-    })
-  })
-})
+
+
+
+
+    // Provide a natural language description of the due date and other parameters
+    const dateTimeString = "14 May 2024 07:06";
+
+    // Parse the natural language description into a Date object
+    const dateTimeInput = chrono.parse(dateTimeString, { instant: new Date(now), timezone: "GMT" });
+
+
+    // Add the task, commit, sync, get the items list, and find the item you added
+    const itemToAdd = await api.items.add({ content: itemContent, due: { string: expectedDateTimeString } });
+    await api.commit();
+    await api.sync();
+
+    // Get the item you added
+    const items = api.items.get();
+    const addedItem = items.find((item) => item.content === itemContent);
+    const addedItemDue = addedItem?.due;
+
+    expect(addedItemDue).toEqual({
+      date: expectedDueDateISOStringWithoutMiliseconds,
+      is_recurring: false,
+      lang: 'en',
+      string: expectedDateTimeString,  // This should match what you added
+      timezone: null,
+    });
+  });
+
+});
