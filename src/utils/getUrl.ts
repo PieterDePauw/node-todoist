@@ -1,7 +1,6 @@
 // Helper function to get the API URL for Todoist Sync API
-export function getApiUrl() {
+export function getApiUrl(api_version: string): string {
 	const api_endpoint = 'https://api.todoist.com';
-	const api_version = 'v9';
 	return `${api_endpoint}/sync/${api_version}/`;
 }
 
