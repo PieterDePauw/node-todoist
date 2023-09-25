@@ -2,7 +2,7 @@ import * as chrono from 'chrono-node';
 import { v9 as Todoist } from './index';
 import { config } from 'dotenv';
 import { Item, ItemAdd, DueDateInputString } from './v9-types'; // Import the types you defined
-import { State } from './v9-interfaces'
+import { Command, State } from './v9-interfaces'
 import path from 'path';
 import moment from 'moment';
 
@@ -35,6 +35,7 @@ describe('initialization', () => {
 describe('.items CRUD', () => {
   api = Todoist(token);
   let newItem: Item | undefined;
+  let addedItem: Command
 
   it('.get() returns data', () => {
     const items = api.items.get();
@@ -42,20 +43,24 @@ describe('.items CRUD', () => {
   });
 
   it('.add() works', async () => {
-    const itemToAdd: ItemAdd = { content: 'testing-task' };  // Use the ItemAdd type you defined
-    await api.items.add(itemToAdd);
+    const itemToAdd: ItemAdd = { content: 'testing-task-item' };  // Use the ItemAdd type you defined
+    addedItem = await api.items.add(itemToAdd);
     await api.commit();
     await api.sync();
-    newItem = api.items.get().find((item) => item.content === 'testing-task');
-    expect(newItem).toMatchObject({ content: 'testing-task' });
+    newItem = api.items.get().find((item) => item.content === itemToAdd.content);
+    expect(newItem).toMatchObject({ content: 'testing-task-item' });
   });
 
   it('.delete() works', async () => {
-    if (!newItem) { throw new Error('newItem is not initialized') }
-    await api.items.delete({ id: newItem.id });
+    const itemToAdd: ItemAdd = { content: 'testing-task-item2' };  // Use the ItemAdd type you defined
+    addedItem = await api.items.add(itemToAdd);
     await api.commit();
-    await api.sync();
-    const deletedItem = api.items.get().find((item) => item.id === newItem?.id);
+    await api.sync("*");
+    const addedItemCommited = api.items.get().find((item) => item.content === itemToAdd.content)!;
+    await api.items.delete({ id: addedItemCommited.id });
+    await api.commit();
+    await api.sync("*")
+    const deletedItem = api.items.get().find((item) => item.id === addedItemCommited.id);
     expect(deletedItem).toBeUndefined();
   });
 });
@@ -96,7 +101,7 @@ describe('.items due dates', () => {
     // Get the item you added
     const items = api.items.get();
     const addedItem = items.find((item) => item.content === itemContent);
-    const addedItemDue = addedItem?.due;
+    const addedItemDue = addedItem!.due;
 
     expect(addedItemDue).toEqual({
       date: expectedDueDateISOStringWithoutMiliseconds,
