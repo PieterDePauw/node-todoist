@@ -27,9 +27,9 @@ export const defaultOptions: TodoistOptions = {
 /*====================================**/
 
 // Use createCommandsArray function to create a commands array
-const createCommandsArray = (initialArray: Command[]): CommandsArrayFunctions => {
+const createCommandsArray = (initArray: Command[]): CommandsArrayFunctions => {
   // Create an array to store the commands
-  let commandsArray: Command[] = deepcopy(initialArray);
+  let commandsArray: Command[] = deepcopy(initArray);
   // Return the functions to interact with the commands array
   return {
     // The getCommands function returns a copy of the commands array
@@ -74,7 +74,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   const endpoint = `${options.endpoint}/sync`
   let syncToken = '*';
 
-
+  // The request method makes an HTTP request to the Todoist API
   const request = async (url: { url: string; query?: URLSearchParams }, data: Record<string, string> = {}) => {
     let realUrl = typeof url === 'object' ? url.url : url
     let options = typeof url === 'object' ? { searchParams: url.query, form: data } : { form: data }
@@ -167,69 +167,55 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     let localState = deepcopy(initState);
     return {
       getState: (): State => {
-        // console.log("The state has been retrieved")
         return (deepcopy(state));
+      },
+      getLocalState: (): State => {
+        return deepcopy(localState);
       },
       setState: (newState: State): State => {
         state = deepcopy(newState);
-        // console.log("The state has been updated")
         return deepcopy(state)
-      },
-      resetState: (): State => {
-        state = deepcopy(initState);
-        // console.log("The state and the sync token have been reset");
-        return deepcopy(state)
-      },
-      getLocalState: (): State => {
-        // console.log("The local state has been retrieved")
-        return deepcopy(localState);
       },
       setLocalState: (newLocalState: State): State => {
         localState = deepcopy(newLocalState);
-        // console.log("The local state has been updated")
         return deepcopy(localState);
       },
-      resetLocalState: (): State => {
+      resetState: (): State => {
+        // Reset the sync token
+        syncToken = "*";
+        state = deepcopy(initState);
         localState = deepcopy(initState);
-        // console.log("The local state has been reset");
-        return deepcopy(localState);
-      }
+        return deepcopy(initState)
+      },
     }
   }
-  const { getState, setState, resetState } = createStateManager(initialState);
-  const { getLocalState, setLocalState, resetLocalState } = createStateManager(initialState);
+
+  // Initialize a state manager for the state and the local state with the initial state
+  const { getState, getLocalState, setState, setLocalState, resetState } = createStateManager(initialState);
 
   /**===================================**
       *  	UPDATE STATE FUNCTIONS	 *
   /*====================================**/
 
-  // The resetState method resets the state to the initial state
-  const clearState = () => {
-    syncToken = "*";
-    resetState()
-    resetLocalState();
-  }
-
-  // The updateState method updates the state based on the latest sync response
-  /*
-  const updateState = (response: TodoistResponse) => {
+  //! This function is not used temporarily.
+  /* const updateState = (response: TodoistResponse) => {
     const nextState = produce((draft: State, response: TodoistResponse): void => {
       // Check if the response contains the sync token and the full sync flag
       if (!response.hasOwnProperty('sync_token') || !response.hasOwnProperty('full_sync')) { throw new Error('Invalid response! The property "sync_token" and/or the property "full_sync" is missing') }
-
+      
       // Destructure the sync token and the full sync flag from the response
       const { sync_token, full_sync } = response;
-
+      
       // Assign the sync token to the syncToken variable
       syncToken = sync_token;
-
+      
       // Full sync
       if (full_sync === true) {
         const allFields = ['day_orders_timestamp', 'live_notifications_last_read_id', 'locations', 'day_orders', 'settings_notifications', 'user', 'user_settings', 'collaborators', 'collaborator_states', 'filters', 'items', 'labels', 'live_notifications', 'notes', 'project_notes', 'projects', 'reminders', 'sections']
         // allFields.forEach((field: string) => response[field] && (draft[field] = response[field]));
         allFields.forEach((field: string) => { draft[field] = response[field] });
       }
-
+      
       // Partial sync
       if (full_sync !== true) {
         // Simple field updates
@@ -240,7 +226,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
           // Process each object of this specific type in the sync data.
           draft[field] = response[field]
         })
-
+        
         // Complex field updates
         const complexFields = ['day_orders', 'settings_notifications', 'user', 'user_settings'];
         complexFields.forEach((field: string) => {
@@ -249,7 +235,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
           // Process each object of this specific type in the sync data.
           draft[field] = Object.assign(draft[field], response[field]);
         });
-
+        
         const otherFields = ['collaborators', 'collaborator_states', 'filters', 'items', 'labels', 'live_notifications', 'notes', 'project_notes', 'projects', 'reminders', 'sections'];
         otherFields.forEach((field: string) => {
           // If the field is not present in the response, skip it.
@@ -282,34 +268,29 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
         })
       }
     })
-
+    
     // Get the current state
     const currentState = getState();
-
+    
     // Get the next state by applying the response to the current state
     // nextState(currentState, response);
-
+    
     // Update the state
     setState(nextState(currentState, response));
-
+    
     // Get the updated state
     const updatedState = getState();
-
+    
     // Update the state
     setState(updatedState);
-
+    
     // Update the local state
     setLocalState(updatedState);
-
+    
     // Return the updated state
     return updatedState;
-  }
-  */
-
-  const updateState = (patch: TodoistResponse): State => {
-    // Log a message to the console
-    console.log('Updating the state has begun...');
-
+  } */
+  /* const updateState = (patch: TodoistResponse): State => {
     // Get the current state
     let currentState = getState();  // Using the getState method you've created
 
@@ -321,68 +302,67 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     if (patch.full_sync === true) {
       setState(patch);
       setLocalState(patch);
-      console.log('Updating the state has ended...');
-
-      const updatedState = getState(); // Using the getState method you've created
-      return updatedState;
     }
 
-    const syncRelatedKeySet = new Set(['full_sync', 'sync_status', 'temp_id_mapping', 'sync_token']);
-    const replaceableKeySet = new Set(['day_orders_timestamp', 'live_notifications_last_read_id', 'locations']);
-    const mergeableKeySet = new Set(['day_orders', 'settings_notifications', 'user', 'user_settings']);
-    const complexResourceTypesSet = new Set(['collaborators', 'collaborator_states', 'filters', 'items', 'labels', 'live_notifications', 'notes', 'project_notes', 'projects', 'reminders', 'sections']);
+    // PARTIAL_SYNC
+    if (patch.full_sync === false) {
+      // Define the key sets
+      const syncRelatedKeySet = new Set(['full_sync', 'sync_status', 'temp_id_mapping', 'sync_token']);
+      const replaceableKeySet = new Set(['day_orders_timestamp', 'live_notifications_last_read_id', 'locations']);
+      const mergeableKeySet = new Set(['day_orders', 'settings_notifications', 'user', 'user_settings']);
+      const complexResourceTypesSet = new Set(['collaborators', 'collaborator_states', 'filters', 'items', 'labels', 'live_notifications', 'notes', 'project_notes', 'project', 'reminders', 'sections']);
 
-    // UPDATE THE STATE
-    for (const key in patch) {
-      if (!patch.hasOwnProperty(key) || syncRelatedKeySet.has(key)) {
-        continue;
-      }
-
-      const keyOfState = key as keyof State;
-
-      if (replaceableKeySet.has(key)) {
-        (currentState[keyOfState] as any) = patch[keyOfState]; // Type assertion
-        continue;
-      }
-
-      if (mergeableKeySet.has(key)) {
-        Object.assign(currentState[keyOfState], patch[keyOfState]);
-        continue;
-      }
-
-      if (complexResourceTypesSet.has(key)) {
-        const currentResourceMap = new Map(
-          (currentState[keyOfState] as Types.NodeType[]).map(item => [item.id, item])
-        );
-
-        for (const item of (patch[keyOfState] as Types.NodeType[])) {
-          if (item.is_deleted) {
-            currentResourceMap.delete(item.id);
-          } else {
-            const currentResource = currentResourceMap.get(item.id);
-            if (currentResource) {
-              Object.assign(currentResource, item);
-            } else {
-              currentResourceMap.set(item.id, item);
-            }
-          }
+      // UPDATE THE STATE
+      for (const key in patch) {
+        if (!patch.hasOwnProperty(key) || syncRelatedKeySet.has(key)) {
+          continue;
         }
 
-        (currentState[keyOfState] as any) = Array.from(currentResourceMap.values()); // Type assertion
+        const keyOfState = key as keyof State;
+
+        if (replaceableKeySet.has(key)) {
+          (currentState[keyOfState] as any) = patch[keyOfState]; // Type assertion
+          continue;
+        }
+
+        if (mergeableKeySet.has(key)) {
+          Object.assign(currentState[keyOfState], patch[keyOfState]);
+          continue;
+        }
+
+        if (complexResourceTypesSet.has(key)) {
+          const currentResourceMap = new Map(
+            (currentState[keyOfState] as Types.NodeType[]).map(item => [item.id, item])
+          );
+
+          for (const item of (patch[keyOfState] as Types.NodeType[])) {
+            if (item.is_deleted) {
+              currentResourceMap.delete(item.id);
+            } else {
+              const currentResource = currentResourceMap.get(item.id);
+              if (currentResource) {
+                Object.assign(currentResource, item);
+              } else {
+                currentResourceMap.set(item.id, item);
+              }
+            }
+          }
+
+          (currentState[keyOfState] as any) = Array.from(currentResourceMap.values()); // Type assertion
+        }
       }
+      setState(currentState);
+      setLocalState(currentState);
     }
-    // Log a message to the console
-    console.log('Updating the state has ended...');
+    const updatedState = getState();
+    return updatedState;
+  }; */
 
-    setState(currentState); // Using the setState method you've created
-    return getState(); // Using the getState method you've created
-  };
-
-  // TODO: refactor this entire function to use a single function for all commands
-  const updateStateAndUpdateLocalState = () => {
-
+  // The updateState method updates the state based on the latest sync response
+  const updateState = (patch: TodoistResponse): State => {
+    const newState: State = { ...getState() };
+    return newState;
   }
-
 
   // The updateLocalState method updates the local state based on the latest executed command
   const updateLocalState = (resourceType: keyof TodoistResources, action: string, command: Command) => {
@@ -417,6 +397,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
     // Update the local state
     return updatedLocalState
+  }
+
+
+  // TODO: Unified update function
+  const update = (resourceType: keyof TodoistResources, action: string, command: Command) => {
+    const updatedState = { ...getState() };
+    return updatedState
   }
 
   // The executeCommand method adds a new command to the queue and updates the local state accordingly
@@ -460,7 +447,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   // The sync method syncs the current state with the server and updates the state accordingly
   const sync = async (token?: string) => {
     // Get the sync token
-    const sync_token = token === undefined ? syncToken : token
+    const sync_token = (token === undefined) ? syncToken : token
 
     // Build the data object for the HTTP request
     const data = {
@@ -490,7 +477,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     clearCommands()
 
     // Get the sync token
-    const sync_token = token === undefined ? syncToken : token
+    const sync_token = (token === undefined) ? syncToken : token
 
     // Build the data object for the HTTP request
     const data = {
@@ -513,6 +500,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   }
 
   // API
+  // #region API
 
   const projects = {
     getLocalState: () => (getLocalState())["projects"],
@@ -658,6 +646,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       return syncToken
     },
   }
+
+  // #endregion API
 
   const api = {
     activityLog,

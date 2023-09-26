@@ -320,11 +320,10 @@ export type CommandsArrayFunctions = {
 
 export type StateFunctions = {
 	getState: () => State;
-	setState: (newState: State) => State;
-	resetState: () => State;
 	getLocalState: () => State;
+	setState: (newState: State) => State;
 	setLocalState: (newLocalState: State) => State;
-	resetLocalState: () => State;
+	resetState: () => State;
 }
 
 export type SyncTokenFunctions = {
