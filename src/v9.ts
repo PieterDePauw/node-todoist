@@ -371,9 +371,12 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   // The sync method syncs the current state with the server and updates the state accordingly
   const sync = async (token?: string) => {
+    // Get the sync token
+    const sync_token = token === undefined ? syncToken : token
+
     // Build the data object for the HTTP request
     const data = {
-      'sync_token': token || syncToken,
+      'sync_token': JSON.stringify(sync_token),
       'resource_types': JSON.stringify(["all"]),
     }
 
@@ -398,9 +401,12 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Reset the commands array
     clearCommands()
 
+    // Get the sync token
+    const sync_token = token === undefined ? syncToken : token
+
     // Build the data object for the HTTP request
     const data = {
-      'sync_token': token || syncToken,
+      'sync_token': JSON.stringify(sync_token),
       'resource_types': JSON.stringify(["all"]),
       'commands': JSON.stringify(commands),
     }
