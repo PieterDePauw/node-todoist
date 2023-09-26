@@ -348,14 +348,18 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     const localStateForResourceType = localState[resourceTypes];
 
     // Check if the action function exists for the specified resource type and action
+    if (!actionFunctions) { throw new Error('No action functions found') }
     if (!actionFunctions[resourceTypes]) { throw new Error(`No action function found for resourceType: ${resourceType}`) }
     if (!actionFunctions[resourceTypes][action]) { throw new Error(`No action function found for action: ${action}`) }
 
     // Execute the action function
     actionFunctions[resourceTypes][action](localState, command);
 
+    // Get the updated local state for the resource type
+    const localStateForResourceTypeUpdated = localState[resourceTypes];
+
     // Create a new local state object
-    const newLocalState = Object.assign({}, localState, { [resourceTypes]: localStateForResourceType });
+    const newLocalState = Object.assign({}, localState, { [resourceTypes]: localStateForResourceTypeUpdated });
 
     // Update the local state
     setLocalState(newLocalState);
