@@ -4,7 +4,7 @@ import { produce } from 'immer';
 
 import * as Types from './v9-types';
 import { State, TodoistResources, TodoistResponse, TodoistOptions, Command, CommandsArrayFunctions, StateFunctions } from './v9-interfaces'
-import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, findObject } from './utils';
+import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, findObject, findObjectInState } from './utils';
 import { TODOIST_BASE_URL, TODOIST_RESOURCE_TYPES, TODOIST_AUTOCOMMIT } from './utils/env';
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors';
 import { actionFunctions } from './v9-actions';
@@ -228,24 +228,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       *  	UPDATE STATE FUNCTIONS	 *
   /*====================================**/
 
-  const findObjectInState = (resourceType: string, id: string, user_id?: string): any => {
-    // Define the valid resource types
-    const VALID_RESOURCE_TYPES = ['collaborators', 'collaborator_states', 'filters', 'items', 'labels', 'live_notifications', 'notes', 'project_notes', 'projects', 'reminders', 'sections'];
 
-    // Validate the arguments
-    if (!(typeof resourceType === 'string' && VALID_RESOURCE_TYPES.includes(resourceType))) { throw new Error(`Invalid resourceType argument: ${resourceType}. FindObjectInState requires a string value of a valid resource type as its first argument as its first argument`) };
-    if (!(typeof id === 'string')) { throw new Error('Invalid id argument: FindObjectInState requires a string value as its second argument') };
-    if (!(typeof user_id === 'string' || user_id === undefined)) { throw new Error('Invalid user_id argument: FindObjectInState requires a string value as its optional third argument') };
-
-    // Get the current state
-    const state: State = getState();
-
-    // Find the object in the state
-    // >>> If the resource type is 'collaborator_states', find the object by project id and user id
-    if (resourceType === 'collaborator_states') { return state.collaborator_states.find((collaboratorState: Types.CollaboratorState) => collaboratorState.project_id === id && collaboratorState.user_id === user_id) }
-    // >>> If the resource type is not 'collaborator_states', find the object by id
-    if (resourceType !== 'collaborator_states') { return state[resourceType].find((object: any) => object.id === id) }
-  }
 
   // The updateState method updates the state based on the latest sync response
   const updateState = (response: TodoistResponse) => {
@@ -415,7 +398,10 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     const response = await request({ 'url': endpoint }, data)
 
     // Update the state
-    const updatedState = updateState(response)
+    updateState(response);
+
+    // Get the updated state
+    const updatedState = getState();
 
     // Log the updated state to the console
     // console.dir(updatedState, { depth: 8, colors: true });
@@ -443,7 +429,10 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     const response = await request({ 'url': endpoint }, data)
 
     // Update the state with the response
-    const updatedState = updateState(response)
+    updateState(response)
+
+    // Get the updated state
+    const updatedState = getState();
 
     // Log the updated state to the console
     // console.dir(updatedState, { depth: 8, colors: true });
