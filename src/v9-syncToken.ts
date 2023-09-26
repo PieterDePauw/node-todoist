@@ -1,6 +1,4 @@
-/*
-// Create a state manager for the sync token
-
+// Import utility functions and interfaces from other files
 import { deepcopy } from "./utils";
 import { SyncTokenFunctions } from "./v9-interfaces";
 
@@ -13,22 +11,24 @@ export const createSyncTokenManager = (initToken: string): SyncTokenFunctions =>
 	return {
 		getSyncToken: (): string => {
 			const retrievedSyncToken = deepcopy(syncToken);
-			console.log("The sync token has been retrieved")
+			// console.log("The sync token has been retrieved")
 			return retrievedSyncToken
 		},
 		setSyncToken: (newSyncToken: string): string => {
 			syncToken = deepcopy(newSyncToken);
-			console.log("The sync token has been updated")
+			// console.log("The sync token has been updated")
 			return deepcopy(newSyncToken);
 		},
 		resetSyncToken: () => {
 			syncToken = deepcopy("*");
-			console.log("The sync token has been reset");
+			// console.log("The sync token has been reset");
 			return deepcopy(syncToken);
 		}
 	}
 }
 
+// Initialize the sync token manager with the initial state
 const { getSyncToken, setSyncToken, resetSyncToken } = createSyncTokenManager(initialToken);
+
+// Export the sync token manager functions
 export { getSyncToken, setSyncToken, resetSyncToken };
-*/
