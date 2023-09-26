@@ -1,7 +1,9 @@
+// Import NPM packages
 import got from 'got';
 import { v4 as uuidv4 } from 'uuid';
 import { produce } from 'immer';
 
+// Import types, interfaces and functions
 import * as Types from './v9-types';
 import { State, TodoistResources, TodoistResponse, TodoistOptions, Command, CommandsArrayFunctions, StateFunctions } from './v9-interfaces'
 import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, findObject, findObjectInState } from './utils';
@@ -228,8 +230,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       *  	UPDATE STATE FUNCTIONS	 *
   /*====================================**/
 
-
-
   // The updateState method updates the state based on the latest sync response
   const updateState = (response: TodoistResponse) => {
     const nextState = produce((draft: State, response: TodoistResponse): void => {
@@ -312,6 +312,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     setState(updatedState);
 
     // Update the local state
+    const clearLocalState = resetLocalState();
+    setLocalState(clearLocalState);
     setLocalState(updatedState);
 
     // Return the updated state

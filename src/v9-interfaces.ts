@@ -401,7 +401,6 @@ export interface TodoistResources {
 }
 
 export type TodoistResponse = {
-	[key: string]: any
 	sync_status: Record<string, string & { error_tag: string; error: string }>
 	temp_id_mapping: Record<string, string>
 	sync_token: string
