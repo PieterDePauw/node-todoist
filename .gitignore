@@ -31,3 +31,4 @@ coverage/lcov-report/src/utils/index.ts.html
 coverage/lcov-report/src/utils/replacetempid.ts.html
 coverage/lcov-report/src/utils/validatetoken.ts.html
 coverage/lcov-report/src/utils/findObject.ts.html
+coverage/lcov-report/src/utils/findobjectinstate.ts.html
