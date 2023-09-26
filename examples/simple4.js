@@ -58,9 +58,9 @@ async function delay(seconds) {
   const content = itemToAdd.content
   const newItem = await api.items.add(itemToAdd)
   console.log("ADD NEW ITEM 1");
-  // console.log(newItem);
-  const newItemSorted = newItem["items"].map((i, index) => [index, i.id, i.content, i.checked])
-  console.log(newItemSorted)
+  console.log(newItem);
+  // const newItemSorted = newItem["items"].map((i, index) => [index, i.id, i.content, i.checked])
+  // console.log(newItemSorted)
   console.log("----------------------------------");
 
   //+ DELAY OF 5 SECONDS
@@ -125,9 +125,9 @@ async function delay(seconds) {
   // Use api.items.close() to close an item
   const closedItem = await api.items.close({ id: itemToCloseId})
   console.log("CLOSE ITEM");
-  // console.log(closedItem);
-  const closedItemSorted = closedItem["items"].map((i, index) => [index, i.id, i.content, i.checked])
-  console.log(closedItemSorted)
+  console.log(closedItem);
+  // const closedItemSorted = closedItem["items"].map((i, index) => [index, i.id, i.content, i.checked])
+  // console.log(closedItemSorted)
   console.log("----------------------------------");
 
   //+ DELAY OF 5 SECONDS
