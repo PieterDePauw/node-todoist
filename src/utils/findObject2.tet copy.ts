@@ -1,3 +1,4 @@
+// @ts-nocheck
 import { findObject } from './findObject';
 import * as Types from '../v9-types';
 import { State } from '../v9-interfaces';
