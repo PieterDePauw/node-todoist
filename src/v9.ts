@@ -281,7 +281,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
             const remoteObjects = response[key];
 
             // Loop over each object in an array of resource types in the response...
-            remoteObjects.forEach((remoteObject: Types.NodeType) => {
+            response[key].forEach((remoteObject: Types.NodeType) => {
               // Find a corresponding object in the state object
               const localObject = findObject(key, remoteObject, nextState);
               // Check if the object is deleted in the remote state
