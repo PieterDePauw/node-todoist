@@ -410,9 +410,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Get the updated state
     const updatedState = getState();
 
-    // Log the updated state to the console
-    // console.dir(updatedState, { depth: 8, colors: true });
-
     // Return the state
     return updatedState;
   }
@@ -440,9 +437,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
     // Get the updated state
     const updatedState = getState();
-
-    // Log the updated state to the console
-    // console.dir(updatedState, { depth: 8, colors: true });
 
     // Return the state
     return updatedState;
@@ -600,13 +594,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     backup,
     business,
     colorsById: COLORS_BY_ID,
-    commit: commit(),
+    commit: commit,
     email,
     findObjectState: findObjectInState,
     filters,
     items,
     labels,
-    localState: getLocalState(),
+    localState: getLocalState,
     liveNotifications,
     notes,
     projects,
@@ -615,8 +609,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     sections,
     settings,
     sharing,
-    state: getState(),
-    sync: sync(),
+    state: getState,
+    sync: sync,
     user,
     syncToken: syncToken_,
   }
