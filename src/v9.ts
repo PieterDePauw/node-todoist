@@ -161,31 +161,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     tooltips: []
   }
 
-  // Create a state manager for the sync token
-  /* const createSyncTokenManager = (initToken: string): SyncTokenFunctions => {
-    let syncToken = initToken;
-    return {
-      getSyncToken: (): string => {
-        const retrievedSyncToken = deepcopy(syncToken);
-        console.log("The sync token has been retrieved")
-        return retrievedSyncToken
-      },
-      setSyncToken: (newSyncToken: string): string => {
-        syncToken = deepcopy(newSyncToken);
-        console.log("The sync token has been updated")
-        return deepcopy(newSyncToken);
-      },
-      resetSyncToken: () => {
-        syncToken = deepcopy("*");
-        console.log("The sync token has been reset");
-        return deepcopy(syncToken);
-      }
-    }
-  }
-
-  const { getSyncToken, setSyncToken, resetSyncToken } = createSyncTokenManager(initialToken);
-  */
-
   // Create a state manager for the state and the local state
   const createStateManager = (initState: State): StateFunctions => {
     let state = deepcopy(initState);
@@ -200,8 +175,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
         // console.log("The state has been updated")
         return deepcopy(state)
       },
-      resetState: () => {
-        syncToken = "*";   //resetSyncToken();
+      resetState: (): State => {
         state = deepcopy(initState);
         // console.log("The state and the sync token have been reset");
         return deepcopy(state)
@@ -215,12 +189,11 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
         // console.log("The local state has been updated")
         return deepcopy(localState);
       },
-      resetLocalState: () => {
+      resetLocalState: (): State => {
         localState = deepcopy(initState);
         // console.log("The local state has been reset");
         return deepcopy(localState);
       }
-
     }
   }
   const { getState, setState, resetState } = createStateManager(initialState);
@@ -229,6 +202,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   /**===================================**
       *  	UPDATE STATE FUNCTIONS	 *
   /*====================================**/
+
+  // The resetState method resets the state to the initial state
+  const clearState = () => {
+    syncToken = "*";
+    resetState()
+    resetLocalState();
+  }
 
   // The updateState method updates the state based on the latest sync response
   const updateState = (response: TodoistResponse) => {
@@ -310,10 +290,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
     // Update the state
     setState(updatedState);
-
-    // Reset the local state
-    const clearLocalState = resetLocalState();
-    setLocalState(clearLocalState);
 
     // Update the local state
     setLocalState(updatedState);
