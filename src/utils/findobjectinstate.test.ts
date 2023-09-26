@@ -21,6 +21,12 @@ describe('findObjectInState', () => {
 		state = api.state();  // Assuming there's a method like this
 	});
 
+	it('throws an error if the state argument is not an object', () => {
+		const errorMessage = 'Invalid state argument: FindObjectInState requires an object as its first argument'
+		// @ts-ignore
+		expect(() => { api.findObjectState('invalid', 'items', '123') }).toThrowError(errorMessage);
+	});
+
 	it('throws an error if the resourceType argument is invalid', () => {
 		const errorMessage = 'Invalid resourceType argument: invalid. FindObjectInState requires a string value of a valid resource type as its second argument'
 		expect(() => { api.findObjectState(state, 'invalid', '123') }).toThrowError(errorMessage);
