@@ -2,10 +2,8 @@ import * as chrono from 'chrono-node';
 import { v9 as Todoist } from './index';
 import { config } from 'dotenv';
 import { Item, ItemAdd, DueDateInputString } from './v9-types'; // Import the types you defined
-import { Command, State } from './v9-interfaces'
+import { Command } from './v9-interfaces'
 import path from 'path';
-import moment from 'moment';
-import { error } from 'console';
 
 // Load environment variables from .env file
 config({ path: path.basename(__dirname + '/.env') })
