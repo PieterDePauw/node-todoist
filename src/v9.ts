@@ -311,9 +311,11 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Update the state
     setState(updatedState);
 
-    // Update the local state
+    // Reset the local state
     const clearLocalState = resetLocalState();
     setLocalState(clearLocalState);
+
+    // Update the local state
     setLocalState(updatedState);
 
     // Return the updated state
@@ -329,8 +331,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     // Get the current local state object
     const localState = getLocalState();
 
-    // Get the current local state for the resource type
-    const localStateForResourceType = localState[resourceTypes];
+    // Deep copy the local state object
+    const deepcopiedLocalState = deepcopy(localState);
 
     // Check if the action function exists for the specified resource type and action
     if (!actionFunctions) { throw new Error('No action functions found') }
@@ -338,19 +340,22 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     if (!actionFunctions[resourceTypes][action]) { throw new Error(`No action function found for action: ${action}`) }
 
     // Execute the action function
-    actionFunctions[resourceTypes][action](localState, command);
+    actionFunctions[resourceTypes][action](deepcopiedLocalState, command);
 
     // Get the updated local state for the resource type
     const localStateForResourceTypeUpdated = localState[resourceTypes];
 
     // Create a new local state object
-    const newLocalState = Object.assign({}, localState, { [resourceTypes]: localStateForResourceTypeUpdated });
+    const newLocalState = Object.assign({}, deepcopiedLocalState, { [resourceTypes]: localStateForResourceTypeUpdated });
 
     // Update the local state
     setLocalState(newLocalState);
 
+    // Get the updated local state
+    const updatedLocalState = getLocalState();
+
     // Update the local state
-    return newLocalState
+    return updatedLocalState
   }
 
   // The executeCommand method adds a new command to the queue and updates the local state accordingly
@@ -476,7 +481,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const labels = {
     getLocalState: () => (getLocalState())["labels"],
-    get: () => (getState()).labels,
+    get: () => (getState())["labels"],
     add: createCommand<Types.LabelAdd>('label', 'add'),
     update: createCommand<Types.LabelUpdate>('label', 'update'),
     delete: createCommand<Types.LabelDelete>('label', 'delete'),
@@ -487,7 +492,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const notes = {
     getLocalState: () => (getLocalState())["notes"],
-    get: () => (getState()).notes,
+    get: () => (getState())["notes"],
     add: createCommand<Types.NoteAdd>('note', 'add'),
     update: createCommand<Types.NoteUpdate>('note', 'update'),
     delete: createCommand<Types.NoteDelete>('note', 'delete'),
@@ -495,7 +500,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const projectNotes = {
     getLocalState: () => (getLocalState())["project_notes"],
-    get: () => (getState()).project_notes,
+    get: () => (getState())["project_notes"],
     add: createCommand<Types.ProjectNoteAdd>('project_note', 'add'),
     update: createCommand<Types.ProjectNoteUpdate>('project_note', 'update'),
     delete: createCommand<Types.ProjectNoteDelete>('project_note', 'delete'),
@@ -503,7 +508,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const sections = {
     getLocalState: () => (getLocalState())["sections"],
-    get: () => (getState()).sections,
+    get: () => (getState())["sections"],
     add: createCommand<Types.SectionAdd>('section', 'add'),
     update: createCommand<Types.SectionUpdate>('section', 'update'),
     move: createCommand<Types.SectionMove>('section', 'move'),
@@ -515,7 +520,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const filters = {
     getLocalState: () => (getLocalState())["filters"],
-    get: () => (getState()).filters,
+    get: () => (getState())["filters"],
     add: createCommand<Types.FilterAdd>('filter', 'add'),
     update: createCommand<Types.FilterUpdate>('filter', 'update'),
     delete: createCommand<Types.FilterDelete>('filter', 'delete'),
@@ -524,7 +529,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const reminders = {
     getLocalState: () => (getLocalState())["reminders"],
-    get: () => (getState()).reminders,
+    get: () => (getState())["reminders"],
     add: createCommand<Types.ReminderAdd>('reminder', 'add'),
     update: createCommand<Types.ReminderUpdate>('reminder', 'update'),
     delete: createCommand<Types.ReminderDelete>('reminder', 'delete'),
@@ -533,19 +538,21 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 
   const user = {
     getLocalState: () => (getLocalState())["user"],
-    get: () => (getState()).user,
+    get: () => (getState())["user"],
     update: createCommand<Types.UserUpdate>('user', 'update'),
     updateGoals: createCommand<Types.UserUpdateGoals>('user', 'update_goals'),
   }
 
   const settings = {
     getLocalState: () => (getLocalState())["user_settings"],
-    get: () => (getState()).user_settings,
+    get: () => (getState())["user_settings"],
     update: createCommand<Types.UserSettingsUpdate>('user_settings', 'update'),
   }
 
   const sharing = {
-    collaborators: () => (getLocalState()).collaborators,
+    collaborators: () => (getState())["collaborators"],
+    get: () => (getState())["collaborators"],
+    getLocalState: () => (getLocalState())["collaborators"],
     shareProject: createCommand<Types.CollaboratorShareProject>('collaborator', 'share_project'),
     deleteCollaborator: createCommand<Types.CollaboratorDeleteCollaborator>('collaborator', 'delete_collaborator'),
     acceptInvitation: createCommand<Types.CollaboratorAcceptInvitation>('collaborator', 'accept_invitation'),
@@ -554,18 +561,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   }
 
   const liveNotifications = {
+    getLocalState: () => (getLocalState())["live_notifications"],
+    get: () => (getState())["live_notifications"],
     setLastRead: createCommand<Types.LiveNotificationsSetLastRead>('live_notifications', 'set_last_read'),
     markAsRead: createCommand<Types.LiveNotificationsMarkRead>('live_notifications', 'mark_read'),
     markAllAsRead: createCommand<Types.LiveNotificationsMarkReadAll>('live_notifications', 'mark_read_all'),
     markAsUnread: createCommand<Types.LiveNotificationsMarkUnread>('live_notifications', 'mark_unread'),
   }
-
-  /*
-  const collaboratorStates = {
-    getLocalState: () => (getLocalState())["collaborator_states"],
-    get: () => (getState()).collaborator_states,
-  }
-  */
 
   const business = {
     // TODO: implement
@@ -598,13 +600,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     backup,
     business,
     colorsById: COLORS_BY_ID,
-    commit,
+    commit: commit(),
     email,
     findObjectState: findObjectInState,
     filters,
     items,
     labels,
-    localState: () => getLocalState(),
+    localState: getLocalState(),
     liveNotifications,
     notes,
     projects,
@@ -613,8 +615,8 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     sections,
     settings,
     sharing,
-    state: getState,
-    sync,
+    state: getState(),
+    sync: sync(),
     user,
     syncToken: syncToken_,
   }
