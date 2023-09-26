@@ -4,7 +4,8 @@ import { produce } from 'immer';
 
 import * as Types from './v9-types';
 import { State, TodoistResources, TodoistResponse, TodoistOptions, Command, CommandsArrayFunctions, StateFunctions } from './v9-interfaces'
-import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, replaceTempId, findObject, TODOIST_BASE_URL, TODOIST_RESOURCE_TYPES, TODOIST_AUTOCOMMIT } from './utils';
+import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, findObject } from './utils';
+import { TODOIST_BASE_URL, TODOIST_RESOURCE_TYPES, TODOIST_AUTOCOMMIT } from './utils/env';
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors';
 import { actionFunctions } from './v9-actions';
 
