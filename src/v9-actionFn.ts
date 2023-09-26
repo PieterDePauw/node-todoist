@@ -5,7 +5,10 @@ import { ActionFunctions } from "./v9-interfaces";
 export const actionFunctions: ActionFunctions = {
 	projects: {
 		add: (localState, command) => {
+			// Create a new project object with the command's args, an id, and a temp_id
 			const projectToAddWithID = { ...command.args, id: command.uuid, temp_id: command.uuid };
+
+			// Define the default project object
 			const defaultProject: Types.Project = {
 				id: "",
 				name: "",
@@ -20,8 +23,14 @@ export const actionFunctions: ActionFunctions = {
 				is_favorite: false,
 				view_style: "list",
 			};
+
+			// Merge the default project object with the project object to add
 			const addedProject: Types.Project = { ...defaultProject, ...projectToAddWithID };
+
+			// Add the project to the local state
 			localState["projects"].push(addedProject);
+
+			// Return the local state
 			return localState;
 		},
 		update: (localState, command) => { return localState; },
