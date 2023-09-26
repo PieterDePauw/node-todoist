@@ -443,10 +443,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     if (options.autocommit === true) { await commit() }
 
     // If the autocommit option is set to false, return the command
-    if (options.autocommit === false) { return command }
+    // if (options.autocommit === false) { return command }
+
+    // Get the updated local state
+    const updatedLocalState = getLocalState();
 
     // Return the modified item
-    return command
+    return updatedLocalState
 
     // TODO: Return the local state of the modified resource item, so the temporary id can be used to add other commands that depend on the modified item
   }
