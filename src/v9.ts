@@ -4,10 +4,9 @@ import { produce } from 'immer';
 
 import * as Types from './v9-types';
 import { State, TodoistResources, TodoistResponse, TodoistOptions, Command, CommandsArrayFunctions, StateFunctions } from './v9-interfaces'
-import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, replaceTempId, TODOIST_BASE_URL, TODOIST_RESOURCE_TYPES, TODOIST_AUTOCOMMIT } from './utils';
+import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, replaceTempId, findObject, TODOIST_BASE_URL, TODOIST_RESOURCE_TYPES, TODOIST_AUTOCOMMIT } from './utils';
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors';
 import { actionFunctions } from './v9-actions';
-// import { readCache, writeCache } from './v9-cache';
 
 /**===============================================**
  *   DEFAULT OPTIONS
@@ -228,36 +227,23 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
       *  	UPDATE STATE FUNCTIONS	 *
   /*====================================**/
 
-  // TODO: modify this function to find objects by id
-  // The findObject method finds an object in the state based on the object id
-  const findObject = (resourceType: string, object: any): any => {
-    const state = getState();
-    switch (resourceType) {
-      case 'collaborators':
-        return state.collaborators.find((collaborator: Types.Collaborator) => collaborator.id === object.id);
-      case 'collaborator_states':
-        return state.collaborator_states.find((collaborator_state: Types.CollaboratorState) => collaborator_state.project_id === object.project_id && collaborator_state.user_id === object.user_id);
-      case 'filters':
-        return state.filters.find((filter: Types.Filter) => filter.id === object.id);
-      case 'items':
-        return state.items.find((item: Types.Item) => item.id === object.id);
-      case 'labels':
-        return state.labels.find((label: Types.Label) => label.id === object.id);
-      case 'live_notifications':
-        return state.live_notifications.find((live_notification: Types.LiveNotifications) => live_notification.id === object.id);
-      case 'notes':
-        return state.notes.find((note: Types.Note) => note.id === object.id);
-      case 'project_notes':
-        return state.project_notes.find((project_note: Types.ProjectNote) => project_note.id === object.id);
-      case 'projects':
-        return state.projects.find((project: Types.Project) => project.id === object.id);
-      case 'reminders':
-        return state.reminders.find((reminder: Types.Reminder) => reminder.id === object.id);
-      case 'sections':
-        return state.sections.find((section: Types.Section) => section.id === object.id);
-      default:
-        return null;
-    }
+  const findObjectInState = (resourceType: string, id: string, user_id?: string): any => {
+    // Define the valid resource types
+    const VALID_RESOURCE_TYPES = ['collaborators', 'collaborator_states', 'filters', 'items', 'labels', 'live_notifications', 'notes', 'project_notes', 'projects', 'reminders', 'sections'];
+
+    // Validate the arguments
+    if (!(typeof resourceType === 'string' && VALID_RESOURCE_TYPES.includes(resourceType))) { throw new Error(`Invalid resourceType argument: ${resourceType}. FindObjectInState requires a string value of a valid resource type as its first argument as its first argument`) };
+    if (!(typeof id === 'string')) { throw new Error('Invalid id argument: FindObjectInState requires a string value as its second argument') };
+    if (!(typeof user_id === 'string' || user_id === undefined)) { throw new Error('Invalid user_id argument: FindObjectInState requires a string value as its optional third argument') };
+
+    // Get the current state
+    const state: State = getState();
+
+    // Find the object in the state
+    // >>> If the resource type is 'collaborator_states', find the object by project id and user id
+    if (resourceType === 'collaborator_states') { return state.collaborator_states.find((collaboratorState: Types.CollaboratorState) => collaboratorState.project_id === id && collaboratorState.user_id === user_id) }
+    // >>> If the resource type is not 'collaborator_states', find the object by id
+    if (resourceType !== 'collaborator_states') { return state[resourceType].find((object: any) => object.id === id) }
   }
 
   // The updateState method updates the state based on the latest sync response
@@ -306,7 +292,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
           // Process each object of this specific type in the sync data.
           for (const remoteObj of response[field]) {
             // Find out whether the object in the response already exists in the local state.
-            const localObj = findObject(field, remoteObj);
+            const localObj = findObject(field, remoteObj, getState());
             // If the object exists in the local state and the object in the response is not deleted, update the local object with the data from the response.
             if (localObj !== null && remoteObj.is_deleted === false || 0) {
               const updatedObject = Object.assign({}, localObj, remoteObj);
@@ -550,7 +536,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
   }
 
   const user = {
-    getLocalState: () => (getLocalState()).user,
+    getLocalState: () => (getLocalState())["user"],
     get: () => (getState()).user,
     update: createCommand<Types.UserUpdate>('user', 'update'),
     updateGoals: createCommand<Types.UserUpdateGoals>('user', 'update_goals'),
@@ -577,6 +563,13 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     markAllAsRead: createCommand<Types.LiveNotificationsMarkReadAll>('live_notifications', 'mark_read_all'),
     markAsUnread: createCommand<Types.LiveNotificationsMarkUnread>('live_notifications', 'mark_unread'),
   }
+
+  /*
+  const collaboratorStates = {
+    getLocalState: () => (getLocalState())["collaborator_states"],
+    get: () => (getState()).collaborator_states,
+  }
+  */
 
   const business = {
     // TODO: implement
@@ -611,6 +604,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     colorsById: COLORS_BY_ID,
     commit,
     email,
+    findObjectState: findObjectInState,
     filters,
     items,
     labels,
@@ -623,7 +617,7 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     sections,
     settings,
     sharing,
-    state: () => getState(),
+    state: getState,
     sync,
     user,
     syncToken: syncToken_,
@@ -633,4 +627,4 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
 }
 
 export default Todoist
-export { getColor, colorsById }
+export { getColor, colorsById, COLORS_BY_ID }
