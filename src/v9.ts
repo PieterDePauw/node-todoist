@@ -1,8 +1,6 @@
-import { CollaboratorState } from './v9-types';
 // Import NPM packages
 import got from 'got';
 import { v4 as uuidv4 } from 'uuid';
-import { produce } from 'immer';
 
 // Import types, interfaces and functions
 import * as Types from './v9-types';
@@ -11,8 +9,9 @@ import { deepcopy, validateToken, getResourceTypePlural, getApiUrl, findObject, 
 import { TODOIST_BASE_URL, TODOIST_RESOURCE_TYPES, TODOIST_AUTOCOMMIT } from './utils/env';
 import { COLORS_BY_ID, colorsById, getColor } from './v9-colors';
 import { actionFunctions } from './v9-actions';
-import { NodeType } from './v9-types';
 import { getSyncToken, resetSyncToken, setSyncToken } from './v9-syncToken';
+import { getState, setState, setLocalState, getLocalState } from './v9-state';
+import { addCommand, getCommands, clearCommands } from './v9-commands';
 
 /**===============================================**
  *   DEFAULT OPTIONS
@@ -51,39 +50,6 @@ const respModelsMapping = [
 ];
 
 /**===================================**
- *   CREATE A COMMANDS ARRAY
-/*====================================**/
-
-// Use createCommandsArray function to create a commands array
-const createCommandsArray = (initArray: Command[]): CommandsArrayFunctions => {
-  // Create an array to store the commands
-  let commandsArray: Command[] = deepcopy(initArray);
-  // Return the functions to interact with the commands array
-  return {
-    // The getCommands function returns a copy of the commands array
-    getCommands: () => {
-      const returnedCommandArray: Command[] = deepcopy(commandsArray);
-      return returnedCommandArray;
-    },
-
-    // The clearCommands function clears the commands array
-    clearCommands: () => {
-      commandsArray = [];
-      const returnedCommandArray: Command[] = deepcopy(commandsArray);
-      return returnedCommandArray;
-    },
-
-    // The addCommand function adds a command to the commands array
-    addCommand: (command: Command) => {
-      commandsArray.push(command);
-      const returnedCommandArray: Command[] = deepcopy(commandsArray);
-      return returnedCommandArray;
-    },
-  };
-}
-const { getCommands, clearCommands, addCommand } = createCommandsArray([]);
-
-/**===================================**
  *   CREATE A TODOIST API INSTANCE
 /*====================================**/
 
@@ -109,117 +75,6 @@ export const Todoist = (token: string, userOptions = defaultOptions) => {
     const res = await client<TodoistResponse>(realUrl, options)
     return res.body
   }
-
-  /**===================================**
-     *   	STATE MANAGER
-  /*====================================**/
-
-  // Define the initial state
-  const initialState: State = {
-    collaborator_states: [],
-    collaborators: [],
-    day_orders: {},
-    day_orders_timestamp: "",
-    filters: [],
-    items: [],
-    labels: [],
-    live_notifications: [],
-    live_notifications_last_read_id: -1,
-    locations: [],
-    notes: [],
-    project_notes: [],
-    projects: [],
-    reminders: [],
-    sections: [],
-    user: {
-      id: "0",
-      auto_reminder: 0,
-      avatar_big: "",
-      avatar_medium: "",
-      avatar_s640: "",
-      avatar_small: "",
-      business_account_id: "",
-      daily_goal: 0,
-      date_format: false,
-      dateist_inline_disabled: false,
-      dateist_lang: null,
-      days_off: [],
-      email: "",
-      features: {},
-      full_name: "",
-      image_id: "",
-      inbox_project_id: "",
-      is_biz_admin: false,
-      is_premium: false,
-      joined_at: "2000-01-01",
-      karma: 0,
-      karma_trend: "",
-      lang: "en",
-      next_week: 1,
-      premium_until: "2000-01-01",
-      sort_order: false,
-      start_day: 1,
-      start_page: "inbox",
-      team_inbox: 0,
-      theme_id: 1,
-      time_format: false,
-      token: "",
-      tz_info: {
-        timezone: "",
-        gmt_difference_hours: 0,
-        gmt_difference_minutes: 0,
-        is_dst: false,
-        gmt_string: "00:00"
-      },
-      weekly_goal: 0,
-      has_password: false,
-      weekend_start_day: 1
-    },
-    user_settings: {
-      reminder_push: true,
-      reminder_sms: false,
-      reminder_desktop: true,
-      reminder_email: true
-    },
-    due_exceptions: [],
-    incomplete_item_ids: [],
-    incomplete_project_ids: [],
-    settings_notifications: [],
-    stats: [],
-    tooltips: []
-  }
-
-  // Create a state manager for the state and the local state
-  const createStateManager = (initState: State): StateFunctions => {
-    let state = deepcopy(initState);
-    let localState = deepcopy(initState);
-    return {
-      getState: (): State => {
-        return (deepcopy(state));
-      },
-      getLocalState: (): State => {
-        return deepcopy(localState);
-      },
-      setState: (newState: State): State => {
-        state = deepcopy(newState);
-        return deepcopy(state)
-      },
-      setLocalState: (newLocalState: State): State => {
-        localState = deepcopy(newLocalState);
-        return deepcopy(localState);
-      },
-      resetState: (): State => {
-        // Reset the sync token
-        resetSyncToken();
-        state = deepcopy(initState);
-        localState = deepcopy(initState);
-        return deepcopy(initState)
-      },
-    }
-  }
-
-  // Initialize a state manager for the state and the local state with the initial state
-  const { getState, getLocalState, setState, setLocalState, resetState } = createStateManager(initialState);
 
   /**===================================**
       *  	UPDATE STATE FUNCTIONS	 *
