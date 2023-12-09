@@ -22,7 +22,9 @@ export const createSyncTokenManager = (initialSyncToken: string = defaultSyncTok
 };
 
 // Initialize the sync token manager with the initial state
-const syncTokenManager = createSyncTokenManager();
+export const syncTokenManager = createSyncTokenManager();
+
+export const { getSyncToken, setSyncToken, resetSyncToken } = syncTokenManager;
 
 // Export the sync token manager
 export default syncTokenManager;
