@@ -47,6 +47,9 @@
       "last 1 safari version"
     ]
   },
+  "engines": {
+    "node": ">=21.0.0"
+  },
   "dependencies": {
     "chrono-node": "^2.6.6",
     "got": "^11.3.0",
