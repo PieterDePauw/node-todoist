@@ -32,7 +32,7 @@ devDependencies:
     specifier: ^25.1.4
     version: 25.2.3
   '@types/node':
-    specifier: ^13.9.8
+    specifier: ^13.13.52
     version: 13.13.52
   '@types/uuid':
     specifier: ^8.0.0

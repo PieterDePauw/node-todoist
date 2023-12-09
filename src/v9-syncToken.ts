@@ -1,34 +1,28 @@
 // Import utility functions and interfaces from other files
-import { deepcopy } from "./utils";
 import { SyncTokenFunctions } from "./v9-interfaces";
 
-// Define the initial state
-const initialToken = "*";
+// Define the default initial token as a constant
+const defaultSyncToken = process.env.TODOIST_DEFAULT_INITIAL_SYNC_TOKEN || "*";
 
 // Create a state manager for the sync token
-export const createSyncTokenManager = (initToken: string): SyncTokenFunctions => {
-	let syncToken = deepcopy(initToken);
+export const createSyncTokenManager = (initialSyncToken: string = defaultSyncToken): SyncTokenFunctions => {
+	let syncToken = initialSyncToken;
+
 	return {
-		getSyncToken: (): string => {
-			const retrievedSyncToken = deepcopy(syncToken);
-			// console.log("The sync token has been retrieved")
-			return retrievedSyncToken
-		},
+		getSyncToken: (): string => syncToken,
 		setSyncToken: (newSyncToken: string): string => {
-			syncToken = deepcopy(newSyncToken);
-			// console.log("The sync token has been updated")
-			return deepcopy(newSyncToken);
+			syncToken = newSyncToken;
+			return newSyncToken;
 		},
-		resetSyncToken: () => {
-			syncToken = deepcopy("*");
-			// console.log("The sync token has been reset");
-			return deepcopy(syncToken);
+		resetSyncToken: (): string => {
+			syncToken = initialSyncToken;
+			return syncToken;
 		}
-	}
-}
+	};
+};
 
 // Initialize the sync token manager with the initial state
-const { getSyncToken, setSyncToken, resetSyncToken } = createSyncTokenManager(initialToken);
+const syncTokenManager = createSyncTokenManager();
 
-// Export the sync token manager functions
-export { getSyncToken, setSyncToken, resetSyncToken };
+// Export the sync token manager
+export default syncTokenManager;

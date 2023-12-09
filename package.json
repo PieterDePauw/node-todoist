@@ -58,7 +58,7 @@
     "@types/faker": "^4.1.11",
     "@types/got": "^9.6.12",
     "@types/jest": "^25.1.4",
-    "@types/node": "^13.9.8",
+    "@types/node": "^13.13.52",
     "@types/uuid": "^8.0.0",
     "cross-env": "^7.0.3",
     "dotenv": "^10.0.0",

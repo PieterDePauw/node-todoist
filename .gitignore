@@ -34,3 +34,4 @@ coverage/lcov-report/src/utils/findObject.ts.html
 coverage/lcov-report/src/utils/findobjectinstate.ts.html
 .vscode
 package-lock.json
+.history
